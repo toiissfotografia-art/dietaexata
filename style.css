@@ -1,0 +1,158 @@
+/* ===========================
+   ESTILO GERAL
+=========================== */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Poppins", Arial, sans-serif;
+}
+
+body {
+    background: #f4f4f4;
+    color: #333;
+    padding: 20px;
+}
+
+/* ===========================
+   CORES DO TEMA DIETAEXATA
+=========================== */
+
+:root {
+    --orange: #ff7a00;
+    --dark-gray: #2b2b2b;
+    --light-gray: #e6e6e6;
+    --white: #fff;
+}
+
+/* ===========================
+   SEÇÕES E CARDS
+=========================== */
+
+section {
+    background: var(--white);
+    max-width: 500px;
+    margin: 30px auto;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    animation: fadeIn 0.4s;
+}
+
+.hidden {
+    display: none;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+h1, h2 {
+    color: var(--dark-gray);
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+/* ===========================
+   INPUTS E BOTÕES
+=========================== */
+
+input, select, textarea {
+    width: 100%;
+    padding: 12px;
+    margin: 8px 0;
+    border-radius: 8px;
+    border: 1px solid var(--light-gray);
+    font-size: 15px;
+}
+
+textarea {
+    height: 80px;
+    resize: none;
+}
+
+button {
+    width: 100%;
+    padding: 14px;
+    background: var(--orange);
+    color: var(--white);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 17px;
+    font-weight: bold;
+    transition: 0.2s;
+    margin-top: 10px;
+}
+
+button:hover {
+    background: #e66c00;
+}
+
+/* ===========================
+   LINKS
+=========================== */
+
+.link {
+    text-align: center;
+    margin-top: 12px;
+    text-decoration: underline;
+    cursor: pointer;
+    color: var(--dark-gray);
+}
+
+/* ===========================
+   MENU FIXO
+=========================== */
+
+nav {
+    background: var(--dark-gray);
+    padding: 12px;
+    position: fixed;
+    top: 0;
+    width: 100%;
+    left: 0;
+}
+
+nav ul {
+    display: flex;
+    justify-content: space-around;
+    list-style: none;
+}
+
+nav ul li {
+    color: var(--white);
+    font-weight: bold;
+    cursor: pointer;
+}
+
+/* ===========================
+   QR CODE PIX
+=========================== */
+
+#qrcode {
+    display: flex;
+    justify-content: center;
+    margin: 20px 0;
+}
+
+#pixCode {
+    width: 100%;
+    padding: 10px;
+    background: var(--light-gray);
+    border: none;
+    border-radius: 6px;
+}
+
+/* ===========================
+   DIETA GERADA
+=========================== */
+
+pre {
+    background: var(--light-gray);
+    padding: 15px;
+    border-radius: 10px;
+    white-space: pre-wrap;
+}

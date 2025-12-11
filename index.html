@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DietaExata - Gerador de Dietas</title>
+
+    <style>
+        body {
+            margin: 0;
+            background: #f3f3f3;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            max-width: 420px;
+            margin: auto;
+            padding: 20px;
+            text-align: center;
+        }
+        input, select, textarea {
+            width: 100%;
+            margin: 6px 0;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #aaa;
+        }
+        button {
+            width: 100%;
+            background: orange;
+            color: #fff;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 6px;
+        }
+        nav {
+            background: #333;
+            padding: 10px 0;
+            margin-bottom: 20px;
+        }
+        nav ul {
+            list-style: none;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            padding: 0;
+        }
+        nav ul li {
+            color: white;
+            cursor: pointer;
+        }
+        .link { color: orange; cursor: pointer; margin-top: 10px; }
+        .hidden { display: none; }
+        pre { white-space: pre-wrap; text-align: left; background: #fff; padding: 10px; border-radius: 6px; }
+    </style>
+</head>
+<body>
+
+<!-- MENU -->
+<nav id="menu" class="hidden">
+    <ul>
+        <li onclick="mostrarPagina('bemVindo')">Home</li>
+        <li onclick="mostrarPagina('criarDieta')">Criar Dieta</li>
+        <li onclick="mostrarPagina('indicacao')">Indique</li>
+        <li onclick="mostrarPagina('minhasDietas')">Minhas Dietas</li>
+        <li onclick="logout()">Sair</li>
+    </ul>
+</nav>
+
+<!-- LOGIN -->
+<section id="loginPage">
+    <div class="container">
+        <h1>Entrar</h1>
+        <input id="loginEmail" placeholder="Email" />
+        <input id="loginSenha" type="password" placeholder="Senha" />
+        <button onclick="login()">Entrar</button>
+        <p class="link" onclick="mostrarCadastro()">Criar Conta</p>
+    </div>
+</section>
+
+<!-- CADASTRO -->
+<section id="cadastroPage" class="hidden">
+    <div class="container">
+        <h1>Criar Conta</h1>
+        <input id="cadNome" placeholder="Nome completo" />
+        <input id="cadEmail" placeholder="Email" />
+        <input id="cadSenha" type="password" placeholder="Senha" />
+        <input id="cadIndicador" placeholder="Código de indicação (opcional)" />
+        <button onclick="cadastrar()">Cadastrar</button>
+        <p class="link" onclick="mostrarLogin()">Já tenho conta</p>
+    </div>
+</section>
+
+<!-- PAGAMENTO PIX -->
+<section id="pagamentoPage" class="hidden">
+    <div class="container">
+        <h2>Pagamento via PIX</h2>
+        <p>Valor: <b>R$ 29,90</b></p>
+
+        <div id="qrcode"></div>
+        <textarea id="pixCode" readonly onclick="this.select()"></textarea>
+
+        <button onclick="confirmarPagamento()">Já paguei</button>
+    </div>
+</section>
+
+<!-- HOME -->
+<section id="bemVindoPage" class="hidden">
+    <div class="container">
+        <h1 id="bemVindoNome"></h1>
+        <p>Bem-vindo ao DietaExata!</p>
+
+        <button onclick="mostrarPagina('criarDieta')">Criar Dieta</button>
+        <button onclick="mostrarPagina('indicacao')">Indique e Ganhe</button>
+        <button onclick="mostrarPagina('minhasDietas')">Minhas Dietas</button>
+    </div>
+</section>
+
+<!-- CRIAR DIETA -->
+<section id="criarDietaPage" class="hidden">
+    <div class="container">
+        <h2>Criar Dieta</h2>
+
+        <input id="idade" placeholder="Idade" />
+        <input id="altura" placeholder="Altura (cm)" />
+        <input id="peso" placeholder="Peso (kg)" />
+
+        <select id="objetivo">
+            <option>Emagrecer</option>
+            <option>Engordar</option>
+            <option>Manter</option>
+        </select>
+
+        <textarea id="horarios" placeholder="Horários de refeições"></textarea>
+        <textarea id="gostos" placeholder="O que gosta de comer"></textarea>
+        <textarea id="restricoes" placeholder="Restrições"></textarea>
+
+        <input id="acorda" placeholder="Horário que acorda" />
+        <input id="dorme" placeholder="Horário que dorme" />
+
+        <button onclick="gerarDieta()">Gerar Dieta</button>
+    </div>
+</section>
+
+<!-- DIETA GERADA -->
+<section id="dietaGeradaPage" class="hidden">
+    <div class="container">
+        <h2>Sua Dieta</h2>
+        <pre id="dietaResultado"></pre>
+        <button onclick="salvarDieta()">Salvar Dieta</button>
+        <button onclick="mostrarPagina('bemVindo')">Voltar</button>
+    </div>
+</section>
+
+<!-- INDICAÇÃO -->
+<section id="indicacaoPage" class="hidden">
+    <div class="container">
+        <h2>Indique e Ganhe</h2>
+
+        <p>Código:</p>
+        <pre id="meuCodigo"></pre>
+        <button onclick="copiarCodigo()">Copiar Código</button>
+
+        <p>Link de Convite:</p>
+        <pre id="meuLink"></pre>
+        <button onclick="copiarLink()">Copiar Link</button>
+    </div>
+</section>
+
+<section id="minhasDietasPage" class="hidden">
+    <div class="container">
+        <h2>Minhas Dietas</h2>
+        <pre id="listaDietas"></pre>
+    </div>
+</section>
+
+<!-- QR CODE LIB -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<!-- SCRIPT PRINCIPAL -->
+<script>
+let usuario = null;
+
+// =================== NAVEGAÇÃO ===================
+
+function esconderTudo() {
+    document.querySelectorAll("section").forEach(s => s.classList.add("hidden"));
+    document.getElementById("menu").classList.add("hidden");
+}
+
+function mostrarPagina(p) {
+    esconderTudo();
+    document.getElementById("menu").classList.remove("hidden");
+    document.getElementById(p + "Page").classList.remove("hidden");
+
+    if (p === "minhasDietas") listarDietas();
+    if (p === "indicacao") gerarCodigoIndicacao();
+}
+
+// =================== LOGIN ===================
+
+function mostrarCadastro() { esconderTudo(); document.getElementById("cadastroPage").classList.remove("hidden"); }
+function mostrarLogin() { esconderTudo(); document.getElementById("loginPage").classList.remove("hidden"); }
+
+function login() {
+    const salvo = JSON.parse(localStorage.getItem("usuario"));
+    const email = loginEmail.value;
+    const senha = loginSenha.value;
+
+    if (!salvo || salvo.email !== email || salvo.senha !== senha)
+        return alert("Usuário ou senha inválidos");
+
+    if (!salvo.ativo)
+        return mostrarPagamento();
+
+    usuario = salvo;
+    abrirHome();
+}
+
+// =================== CADASTRO ===================
+
+function cadastrar() {
+    usuario = {
+        nome: cadNome.value,
+        email: cadEmail.value,
+        senha: cadSenha.value,
+        indicador: cadIndicador.value,
+        dietas: [],
+        ativo: false
+    };
+
+    localStorage.setItem("usuario", JSON.stringify(usuario));
+    mostrarPagamento();
+}
+
+// =================== PAGAMENTO PIX ===================
+
+function mostrarPagamento() {
+    esconderTudo();
+    document.getElementById("pagamentoPage").classList.remove("hidden");
+    gerarPix();
+}
+
+function gerarPix() {
+    const chave = "35807794869";
+    const nome = "Bruno Jeferson Dionisio Barbosa";
+    const cidade = "SAO PAULO";
+    const valor = "29.90";
+
+    const payload = `00020126580014BR.GOV.BCB.PIX01${chave.length}${chave}5204000053039865405${valor}5802BR59${nome.length}${nome}6010${cidade}62070503***6304`;
+    const codigo = payload.replace(/\s+/g, "");
+
+    pixCode.value = codigo;
+
+    document.getElementById("qrcode").innerHTML = "";
+
+    new QRCode(document.getElementById("qrcode"), {
+        text: codigo,
+        width: 240,
+        height: 240
+    });
+}
+
+function confirmarPagamento() {
+    usuario.ativo = true;
+    localStorage.setItem("usuario", JSON.stringify(usuario));
+    abrirHome();
+}
+
+// =================== HOME ===================
+
+function abrirHome() {
+    esconderTudo();
+    document.getElementById("menu").classList.remove("hidden");
+    document.getElementById("bemVindoPage").classList.remove("hidden");
+
+    bemVindoNome.innerText = "Olá, " + usuario.nome;
+}
+
+// =================== DIETA ===================
+
+function gerarDieta() {
+    const dieta =
+`Dieta Personalizada
+Idade: ${idade.value}
+Altura: ${altura.value}
+Peso: ${peso.value}
+Objetivo: ${objetivo.value}
+
+Café: ovos + frutas
+Almoço: arroz + frango + legumes
+Jantar: leve + proteína`;
+
+    dietaResultado.innerText = dieta;
+    mostrarPagina("dietaGerada");
+}
+
+function salvarDieta() {
+    usuario.dietas.push(dietaResultado.innerText);
+    localStorage.setItem("usuario", JSON.stringify(usuario));
+    alert("Dieta salva!");
+}
+
+function listarDietas() {
+    listaDietas.innerText = usuario.dietas.join("\n\n-----------------\n\n");
+}
+
+// =================== INDICAÇÃO ===================
+
+function gerarCodigoIndicacao() {
+    const codigo = btoa(usuario.email).substring(0, 8);
+
+    usuario.codigo = codigo;
+    localStorage.setItem("usuario", JSON.stringify(usuario));
+
+    meuCodigo.innerText = codigo;
+    meuLink.innerText = window.location.href + "?indicador=" + codigo;
+}
+
+function copiarCodigo() {
+    navigator.clipboard.writeText(usuario.codigo);
+    alert("Copiado");
+}
+function copiarLink() {
+    navigator.clipboard.writeText(meuLink.innerText);
+    alert("Copiado");
+}
+
+// =================== SESSÃO ===================
+
+function logout() {
+    localStorage.removeItem("usuario");
+    location.reload();
+}
+</script>
+
+</body>
+</html>
