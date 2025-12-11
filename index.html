@@ -1,339 +1,305 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>DietaExata - Gerador de Dietas</title>
+// -------------------------------------------------
+// DietaExata - script.js (frontend)
+// Requisitos: BACKEND_URL apontando para o backend Render
+// Backend deve expor /gerar-pix (POST) e /api/payment/:id (GET)
+// -------------------------------------------------
 
-    <style>
-        body {
-            margin: 0;
-            background: #f3f3f3;
-            font-family: Arial, sans-serif;
-        }
-        .container {
-            max-width: 420px;
-            margin: auto;
-            padding: 20px;
-            text-align: center;
-        }
-        input, select, textarea {
-            width: 100%;
-            margin: 6px 0;
-            padding: 10px;
-            border-radius: 6px;
-            border: 1px solid #aaa;
-        }
-        button {
-            width: 100%;
-            background: orange;
-            color: #fff;
-            padding: 12px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            margin-top: 6px;
-        }
-        nav {
-            background: #333;
-            padding: 10px 0;
-            margin-bottom: 20px;
-        }
-        nav ul {
-            list-style: none;
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            padding: 0;
-        }
-        nav ul li {
-            color: white;
-            cursor: pointer;
-        }
-        .link { color: orange; cursor: pointer; margin-top: 10px; }
-        .hidden { display: none; }
-        pre { white-space: pre-wrap; text-align: left; background: #fff; padding: 10px; border-radius: 6px; }
-    </style>
-</head>
-<body>
+const BACKEND_URL = "https://SEU_BACKEND_RENDER_URL"; // <<< substitua pelo seu URL (Render)
+const PAYMENT_AMOUNT = 19.99; // valor da assinatura
+const COMMISSION_RATE = 0.5;  // 50% do primeiro pagamento
 
-<!-- MENU -->
-<nav id="menu" class="hidden">
-    <ul>
-        <li onclick="mostrarPagina('bemVindo')">Home</li>
-        <li onclick="mostrarPagina('criarDieta')">Criar Dieta</li>
-        <li onclick="mostrarPagina('indicacao')">Indique</li>
-        <li onclick="mostrarPagina('minhasDietas')">Minhas Dietas</li>
-        <li onclick="logout()">Sair</li>
-    </ul>
-</nav>
-
-<!-- LOGIN -->
-<section id="loginPage">
-    <div class="container">
-        <h1>Entrar</h1>
-        <input id="loginEmail" placeholder="Email" />
-        <input id="loginSenha" type="password" placeholder="Senha" />
-        <button onclick="login()">Entrar</button>
-        <p class="link" onclick="mostrarCadastro()">Criar Conta</p>
-    </div>
-</section>
-
-<!-- CADASTRO -->
-<section id="cadastroPage" class="hidden">
-    <div class="container">
-        <h1>Criar Conta</h1>
-        <input id="cadNome" placeholder="Nome completo" />
-        <input id="cadEmail" placeholder="Email" />
-        <input id="cadSenha" type="password" placeholder="Senha" />
-        <input id="cadIndicador" placeholder="Código de indicação (opcional)" />
-        <button onclick="cadastrar()">Cadastrar</button>
-        <p class="link" onclick="mostrarLogin()">Já tenho conta</p>
-    </div>
-</section>
-
-<!-- PAGAMENTO PIX -->
-<section id="pagamentoPage" class="hidden">
-    <div class="container">
-        <h2>Pagamento via PIX</h2>
-        <p>Valor: <b>R$ 29,90</b></p>
-
-        <div id="qrcode"></div>
-        <textarea id="pixCode" readonly onclick="this.select()"></textarea>
-
-        <button onclick="confirmarPagamento()">Já paguei</button>
-    </div>
-</section>
-
-<!-- HOME -->
-<section id="bemVindoPage" class="hidden">
-    <div class="container">
-        <h1 id="bemVindoNome"></h1>
-        <p>Bem-vindo ao DietaExata!</p>
-
-        <button onclick="mostrarPagina('criarDieta')">Criar Dieta</button>
-        <button onclick="mostrarPagina('indicacao')">Indique e Ganhe</button>
-        <button onclick="mostrarPagina('minhasDietas')">Minhas Dietas</button>
-    </div>
-</section>
-
-<!-- CRIAR DIETA -->
-<section id="criarDietaPage" class="hidden">
-    <div class="container">
-        <h2>Criar Dieta</h2>
-
-        <input id="idade" placeholder="Idade" />
-        <input id="altura" placeholder="Altura (cm)" />
-        <input id="peso" placeholder="Peso (kg)" />
-
-        <select id="objetivo">
-            <option>Emagrecer</option>
-            <option>Engordar</option>
-            <option>Manter</option>
-        </select>
-
-        <textarea id="horarios" placeholder="Horários de refeições"></textarea>
-        <textarea id="gostos" placeholder="O que gosta de comer"></textarea>
-        <textarea id="restricoes" placeholder="Restrições"></textarea>
-
-        <input id="acorda" placeholder="Horário que acorda" />
-        <input id="dorme" placeholder="Horário que dorme" />
-
-        <button onclick="gerarDieta()">Gerar Dieta</button>
-    </div>
-</section>
-
-<!-- DIETA GERADA -->
-<section id="dietaGeradaPage" class="hidden">
-    <div class="container">
-        <h2>Sua Dieta</h2>
-        <pre id="dietaResultado"></pre>
-        <button onclick="salvarDieta()">Salvar Dieta</button>
-        <button onclick="mostrarPagina('bemVindo')">Voltar</button>
-    </div>
-</section>
-
-<!-- INDICAÇÃO -->
-<section id="indicacaoPage" class="hidden">
-    <div class="container">
-        <h2>Indique e Ganhe</h2>
-
-        <p>Código:</p>
-        <pre id="meuCodigo"></pre>
-        <button onclick="copiarCodigo()">Copiar Código</button>
-
-        <p>Link de Convite:</p>
-        <pre id="meuLink"></pre>
-        <button onclick="copiarLink()">Copiar Link</button>
-    </div>
-</section>
-
-<section id="minhasDietasPage" class="hidden">
-    <div class="container">
-        <h2>Minhas Dietas</h2>
-        <pre id="listaDietas"></pre>
-    </div>
-</section>
-
-<!-- QR CODE LIB -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-
-<!-- SCRIPT PRINCIPAL -->
-<script>
+// APP STATE
 let usuario = null;
+let lastPaymentId = null;
 
-// =================== NAVEGAÇÃO ===================
-
-function esconderTudo() {
-    document.querySelectorAll("section").forEach(s => s.classList.add("hidden"));
-    document.getElementById("menu").classList.add("hidden");
+// ------------------ UTIL ------------------
+function $(id){ return document.getElementById(id); }
+function show(id){ $(id).classList.remove('hidden'); }
+function hide(id){ $(id).classList.add('hidden'); }
+function mostrarPagina(page){
+  // esconder todas
+  document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
+  // menu
+  if (localStorage.getItem('usuario')) show('menu'); else hide('menu');
+  // show page
+  show(page + 'Page');
+  // hooks
+  if (page === 'bemVindo') updateWelcome();
+  if (page === 'minhasDietas') listarDietas();
+  if (page === 'indicacao') gerarCodigoIndicacao();
+  if (page === 'indicacoesUsuario') carregarIndicacoes();
 }
 
-function mostrarPagina(p) {
-    esconderTudo();
-    document.getElementById("menu").classList.remove("hidden");
-    document.getElementById(p + "Page").classList.remove("hidden");
+// ------------------ AUTH ------------------
+function mostrarCadastro(){ mostrarPagina('cadastro'); }
+function mostrarLogin(){ mostrarPagina('login'); }
 
-    if (p === "minhasDietas") listarDietas();
-    if (p === "indicacao") gerarCodigoIndicacao();
+function cadastrar(){
+  const nome = $('cadNome').value?.trim();
+  const email = $('cadEmail').value?.trim();
+  const senha = $('cadSenha').value;
+  const indicador = $('cadIndicador').value?.trim();
+
+  if (!nome || !email || !senha) return alert('Preencha nome, email e senha');
+
+  const novo = {
+    nome, email, senha, indicador: indicador || null,
+    dietas: [], ativo: false, codigo: null
+  };
+
+  // gravar por email (simples)
+  localStorage.setItem('usuario_' + email, JSON.stringify(novo));
+  // set current
+  localStorage.setItem('usuario', JSON.stringify(novo));
+  usuario = novo;
+
+  // se veio com indicador do link (query) registre (será processado quando o indicado pagar)
+  mostrarPagina('pagamento');
+  gerarPixFront();
 }
 
-// =================== LOGIN ===================
+function login(){
+  const email = $('loginEmail').value?.trim();
+  const senha = $('loginSenha').value;
 
-function mostrarCadastro() { esconderTudo(); document.getElementById("cadastroPage").classList.remove("hidden"); }
-function mostrarLogin() { esconderTudo(); document.getElementById("loginPage").classList.remove("hidden"); }
+  const salvo = JSON.parse(localStorage.getItem('usuario_' + email));
+  if (!salvo) return alert('Usuário não encontrado');
+  if (salvo.senha !== senha) return alert('Senha incorreta');
 
-function login() {
-    const salvo = JSON.parse(localStorage.getItem("usuario"));
-    const email = loginEmail.value;
-    const senha = loginSenha.value;
+  localStorage.setItem('usuario', JSON.stringify(salvo));
+  usuario = salvo;
 
-    if (!salvo || salvo.email !== email || salvo.senha !== senha)
-        return alert("Usuário ou senha inválidos");
+  if (!usuario.ativo){
+    mostrarPagina('pagamento');
+    gerarPixFront();
+    return;
+  }
 
-    if (!salvo.ativo)
-        return mostrarPagamento();
-
-    usuario = salvo;
-    abrirHome();
+  mostrarPagina('bemVindo');
 }
 
-// =================== CADASTRO ===================
-
-function cadastrar() {
-    usuario = {
-        nome: cadNome.value,
-        email: cadEmail.value,
-        senha: cadSenha.value,
-        indicador: cadIndicador.value,
-        dietas: [],
-        ativo: false
-    };
-
-    localStorage.setItem("usuario", JSON.stringify(usuario));
-    mostrarPagamento();
+// ------------------ WELCOME ------------------
+function updateWelcome(){
+  usuario = JSON.parse(localStorage.getItem('usuario') || null);
+  if (!usuario) { mostrarPagina('login'); return; }
+  $('bemVindoNome').innerText = 'Olá, ' + usuario.nome;
+  // ensure code
+  if (!usuario.codigo) {
+    usuario.codigo = gerarCodigo(usuario.email);
+    localStorage.setItem('usuario', JSON.stringify(usuario));
+  }
+  gerarCodigoIndicacao();
+  show('menu');
 }
 
-// =================== PAGAMENTO PIX ===================
+// ------------------ DIETA ------------------
+function gerarDieta(){
+  const text = `Dieta Personalizada
+Idade: ${$('idade').value}
+Altura: ${$('altura').value}
+Peso: ${$('peso').value}
+Objetivo: ${$('objetivo').value}
 
-function mostrarPagamento() {
-    esconderTudo();
-    document.getElementById("pagamentoPage").classList.remove("hidden");
-    gerarPix();
+Horários: ${$('horarios').value}
+Gosta: ${$('gostos').value}
+Restrições: ${$('restricoes').value}
+Acorda: ${$('acorda').value} - Dorme: ${$('dorme').value}
+`;
+  $('dietaResultado').innerText = text;
+  mostrarPagina('dietaGerada');
 }
 
-function gerarPix() {
-    const chave = "35807794869";
-    const nome = "Bruno Jeferson Dionisio Barbosa";
-    const cidade = "SAO PAULO";
-    const valor = "29.90";
+function salvarDieta(){
+  usuario = JSON.parse(localStorage.getItem('usuario'));
+  if (!usuario) return alert('Usuário não encontrado');
+  usuario.dietas = usuario.dietas || [];
+  usuario.dietas.push($('dietaResultado').innerText);
+  localStorage.setItem('usuario', JSON.stringify(usuario));
+  localStorage.setItem('usuario_' + usuario.email, JSON.stringify(usuario));
+  alert('Dieta salva!');
+}
 
-    const payload = `00020126580014BR.GOV.BCB.PIX01${chave.length}${chave}5204000053039865405${valor}5802BR59${nome.length}${nome}6010${cidade}62070503***6304`;
-    const codigo = payload.replace(/\s+/g, "");
+function listarDietas(){
+  usuario = JSON.parse(localStorage.getItem('usuario'));
+  const list = (usuario && usuario.dietas && usuario.dietas.length) ? usuario.dietas.join('\n\n------\n\n') : 'Nenhuma dieta salva.';
+  $('listaDietas').innerText = list;
+}
 
-    pixCode.value = codigo;
+// ------------------ INDICAÇÃO / CÓDIGO ------------------
+function gerarCodigo(email){ return 'DEX-' + btoa(email).substring(0,8); }
 
-    document.getElementById("qrcode").innerHTML = "";
+function gerarCodigoIndicacao(){
+  usuario = JSON.parse(localStorage.getItem('usuario'));
+  if (!usuario) return;
+  if (!usuario.codigo) {
+    usuario.codigo = gerarCodigo(usuario.email);
+    localStorage.setItem('usuario', JSON.stringify(usuario));
+  }
+  $('meuCodigo').innerText = usuario.codigo;
+  const link = window.location.origin + window.location.pathname + '?indicador=' + usuario.codigo;
+  $('meuLink').innerText = link;
+}
 
-    new QRCode(document.getElementById("qrcode"), {
-        text: codigo,
-        width: 240,
-        height: 240
+// ------------------ INDICAÇÕES / SALDOS ------------------
+// estrutura localStorage 'indicacoes' : { codigo: { lista: [emails], saldo: number } }
+function registrarIndicacaoPara(referrerCode, newUserEmail){
+  if (!referrerCode) return;
+  const indicacoes = JSON.parse(localStorage.getItem('indicacoes') || '{}');
+  if (!indicacoes[referrerCode]) indicacoes[referrerCode] = { lista: [], saldo: 0 };
+  // evitar duplicados
+  if (!indicacoes[referrerCode].lista.includes(newUserEmail)) {
+    indicacoes[referrerCode].lista.push(newUserEmail);
+    indicacoes[referrerCode].saldo = +( (indicacoes[referrerCode].saldo || 0) + (PAYMENT_AMOUNT * COMMISSION_RATE) ).toFixed(2);
+  }
+  localStorage.setItem('indicacoes', JSON.stringify(indicacoes));
+}
+function carregarIndicacoes(){
+  usuario = JSON.parse(localStorage.getItem('usuario') || null);
+  if (!usuario) return mostrarPagina('login');
+
+  const indicacoes = JSON.parse(localStorage.getItem('indicacoes') || '{}');
+  const data = indicacoes[usuario.codigo] || { lista: [], saldo: 0 };
+  $('totalIndicados').innerText = (data.lista.length || 0);
+  $('saldoIndicacoes').innerText = 'R$ ' + (data.saldo || 0).toFixed(2);
+
+  // historico saques
+  const saques = JSON.parse(localStorage.getItem('saques') || '[]');
+  const userSaques = saques.filter(s => s.email === usuario.email);
+  $('historicoSaques').innerText = userSaques.length ? userSaques.map(s => `R$ ${s.valor.toFixed(2)} — ${s.data}`).join('\n') : 'Nenhum saque solicitado.';
+}
+
+// ------------------ SOLICITAR SAQUE ------------------
+function solicitarSaque(){
+  usuario = JSON.parse(localStorage.getItem('usuario') || null);
+  if (!usuario) return alert('Faça login antes.');
+
+  const indicacoes = JSON.parse(localStorage.getItem('indicacoes') || '{}');
+  const data = indicacoes[usuario.codigo] || { lista: [], saldo: 0 };
+  const saldo = +(data.saldo || 0);
+  if (saldo < 1) return alert('Saldo insuficiente para saque.');
+
+  // gravar pedido de saque
+  const saques = JSON.parse(localStorage.getItem('saques') || '[]');
+  const pedido = { id: Date.now().toString(), email: usuario.email, valor: saldo, data: new Date().toLocaleString() };
+  saques.push(pedido);
+  localStorage.setItem('saques', JSON.stringify(saques));
+
+  // zerar saldo do indicador (a gestão real do pagamento deve ser feita pelo backend / admin)
+  indicacoes[usuario.codigo].saldo = 0;
+  localStorage.setItem('indicacoes', JSON.stringify(indicacoes));
+
+  alert('Saque solicitado. Em breve entraremos em contato para transferência.');
+  carregarIndicacoes();
+}
+
+// ------------------ PAGAMENTO (BACKEND) ------------------
+// Gera pagamento via backend seguro (Render)
+async function gerarPixFront(){
+  usuario = JSON.parse(localStorage.getItem('usuario') || null);
+  const email = (usuario && usuario.email) || prompt('Digite seu email para gerar o pagamento:');
+  try {
+    $('pagamentoStatus').innerText = 'Gerando pagamento...';
+    const res = await fetch(BACKEND_URL + '/gerar-pix', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ valor: PAYMENT_AMOUNT, descricao: 'DietaExata - Assinatura', email, nome: usuario?.nome || 'Cliente' })
     });
+    const data = await res.json();
+    if (!res.ok) {
+      console.error('erro', data);
+      $('pagamentoStatus').innerText = 'Erro ao gerar pagamento';
+      return alert('Erro gerar PIX: ' + (data.error || JSON.stringify(data)));
+    }
+
+    // mostrar QR
+    if (data.qr_base64) {
+      $('qrcode').innerHTML = `<img src="data:image/png;base64,${data.qr_base64}" style="max-width:260px">`;
+      $('pixCode').value = data.qr_code || '';
+    } else if (data.qr_code) {
+      $('qrcode').innerHTML = `<div class="small">Copia & Cola</div>`;
+      $('pixCode').value = data.qr_code;
+    }
+
+    lastPaymentId = data.id;
+    localStorage.setItem('lastPaymentId', lastPaymentId);
+    $('pagamentoStatus').innerText = 'Pagamento criado. Escaneie o QR ou copie o código.';
+  } catch (err) {
+    console.error(err);
+    $('pagamentoStatus').innerText = 'Falha ao conectar com o servidor';
+    alert('Erro ao gerar pagamento: veja console');
+  }
 }
 
-function confirmarPagamento() {
-    usuario.ativo = true;
-    localStorage.setItem("usuario", JSON.stringify(usuario));
-    abrirHome();
+async function verificarPagamentoFront(){
+  const paymentId = localStorage.getItem('lastPaymentId');
+  if (!paymentId) return alert('Nenhum pagamento gerado.');
+  try {
+    const res = await fetch(BACKEND_URL + '/api/payment/' + paymentId);
+    const data = await res.json();
+    if (!res.ok) {
+      console.error('erro status', data);
+      return alert('Erro ao consultar pagamento');
+    }
+    // status examples: approved, pending, rejected
+    const status = (data.status || data.mp?.status || '').toLowerCase();
+    $('pagamentoStatus').innerText = 'Status: ' + status;
+    if (status === 'approved' || status === 'paid' || status === 'success') {
+      // marcar usuário como ativo localmente
+      usuario = JSON.parse(localStorage.getItem('usuario') || null);
+      if (!usuario) return alert('Usuário não encontrado');
+      usuario.ativo = true;
+      localStorage.setItem('usuario', JSON.stringify(usuario));
+      localStorage.setItem('usuario_' + usuario.email, JSON.stringify(usuario));
+
+      // se o usuário veio com código indicador (query) devemos creditar o indicador com 50% do valor (apenas no primeiro pagamento)
+      const urlParams = new URLSearchParams(window.location.search);
+      const indicador = urlParams.get('indicador') || usuario.indicador;
+      if (indicador) {
+        registrarIndicacaoPara(indicador, usuario.email);
+      }
+
+      alert('Pagamento confirmado! Acesso liberado.');
+      mostrarPagina('bemVindo');
+      return;
+    } else {
+      alert('Pagamento não confirmado. Status: ' + status);
+    }
+  } catch (err) {
+    console.error(err);
+    alert('Erro ao verificar pagamento.');
+  }
 }
 
-// =================== HOME ===================
+// ------------------ helpers para copiar ------------------
+function copiarCodigo(){ navigator.clipboard.writeText($('meuCodigo').innerText); alert('Código copiado'); }
+function copiarLink(){ navigator.clipboard.writeText($('meuLink').innerText); alert('Link copiado'); }
 
-function abrirHome() {
-    esconderTudo();
-    document.getElementById("menu").classList.remove("hidden");
-    document.getElementById("bemVindoPage").classList.remove("hidden");
+// ------------------ inicialização (on load) ------------------
+(function init(){
+  // se tiver query ?indicador=... salvar no campo de cadastro automático
+  const params = new URLSearchParams(window.location.search);
+  const indicador = params.get('indicador');
+  if (indicador) {
+    // guardar para usar no cadastro
+    document.addEventListener('DOMContentLoaded', ()=> {
+      const el = $('cadIndicador');
+      if (el) el.value = indicador;
+    });
+  }
 
-    bemVindoNome.innerText = "Olá, " + usuario.nome;
-}
+  // recuperar usuário e decidir tela inicial
+  usuario = JSON.parse(localStorage.getItem('usuario') || null);
+  if (!usuario) {
+    mostrarPagina('login');
+  } else if (!usuario.ativo) {
+    mostrarPagina('pagamento');
+    // tentar gerar pix automaticamente (comentado para não gerar sem ação)
+    // gerarPixFront();
+  } else {
+    mostrarPagina('bemVindo');
+  }
 
-// =================== DIETA ===================
+  // preload indicacoes structure if missing
+  if (!localStorage.getItem('indicacoes')) localStorage.setItem('indicacoes', JSON.stringify({}));
+})();
 
-function gerarDieta() {
-    const dieta =
-`Dieta Personalizada
-Idade: ${idade.value}
-Altura: ${altura.value}
-Peso: ${peso.value}
-Objetivo: ${objetivo.value}
-
-Café: ovos + frutas
-Almoço: arroz + frango + legumes
-Jantar: leve + proteína`;
-
-    dietaResultado.innerText = dieta;
-    mostrarPagina("dietaGerada");
-}
-
-function salvarDieta() {
-    usuario.dietas.push(dietaResultado.innerText);
-    localStorage.setItem("usuario", JSON.stringify(usuario));
-    alert("Dieta salva!");
-}
-
-function listarDietas() {
-    listaDietas.innerText = usuario.dietas.join("\n\n-----------------\n\n");
-}
-
-// =================== INDICAÇÃO ===================
-
-function gerarCodigoIndicacao() {
-    const codigo = btoa(usuario.email).substring(0, 8);
-
-    usuario.codigo = codigo;
-    localStorage.setItem("usuario", JSON.stringify(usuario));
-
-    meuCodigo.innerText = codigo;
-    meuLink.innerText = window.location.href + "?indicador=" + codigo;
-}
-
-function copiarCodigo() {
-    navigator.clipboard.writeText(usuario.codigo);
-    alert("Copiado");
-}
-function copiarLink() {
-    navigator.clipboard.writeText(meuLink.innerText);
-    alert("Copiado");
-}
-
-// =================== SESSÃO ===================
-
-function logout() {
-    localStorage.removeItem("usuario");
-    location.reload();
-}
-</script>
-
-</body>
-</html>
